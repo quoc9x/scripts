@@ -1,0 +1,68 @@
+version: '3.8'
+
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+
+  prometheus:
+    image: prom/prometheus:v2.38.0
+    container_name: prometheus-container
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:9.2.3
+    container_name: grafana-container
+    ports:
+      - "3000:3000"
+    # volumes: # Need permission for folder grafana
+    #   - ./grafana/:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_DOMAIN=localhost
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager-container
+    restart: unless-stopped
+    ports:
+      - 9093:9093
+    volumes:
+      - ./alertmanager/config:/config
+      - ./alertmanager/data:/data
+    command: --config.file=/config/alertmanager.yml --log.level=debug
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter-container
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - 9100:9100
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: "128M"
+    networks:
+      - monitoring

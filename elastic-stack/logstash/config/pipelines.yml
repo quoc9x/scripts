@@ -1,0 +1,3 @@
+- pipeline.id: example-project
+  path.config: "/usr/share/logstash/config/pipeline/example-project.conf"
+  pipeline.workers: 1

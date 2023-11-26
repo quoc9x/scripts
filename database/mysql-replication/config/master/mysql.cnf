@@ -1,0 +1,7 @@
+[mysqld]
+ bind-address = 0.0.0.0 # make sure to bind it to all IPs, else mysql listens on 127.0.0.1
+ server-id = 101
+ log_bin = mysql-bin.log
+ binlog_do_db = db
+
+[mysql]

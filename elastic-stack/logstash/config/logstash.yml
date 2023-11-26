@@ -1,0 +1,5 @@
+http.host: 0.0.0.0
+monitoring.enabled: false
+#monitoring.cluster_uuid: tj6aOPtSTx6tG_PEN0m3mw
+xpack.monitoring.enabled: false
+pipeline.ecs_compatibility: disabled

@@ -1,0 +1,126 @@
+version: '3.7'
+
+services:
+  elasticsearch-master:
+    image: hub.saobang.vn/nextpay/elasticsearch:v7.16.2@sha256:92795204f6235d52903a1eda5b39ee3037d0fc2d2f7e3421365b12c82193b104
+    container_name: elasticsearch-master
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - discovery.type=single-node
+      - node.name=elasticsearch-master
+      - ELASTIC_PASSWORD=123456
+      - xpack.security.enabled=true
+      - xpack.security.authc.api_key.enabled=true
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12
+      - xpack.security.transport.ssl.truststore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.truststore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12
+      - xpack.security.http.ssl.keystore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./es-certs:/usr/share/elasticsearch/config/certs
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=500ms"]
+      retries: 30
+      interval: 10s
+      timeout: 10s
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '64m'
+        max-file: '2'
+      driver: json-file
+    
+  kibana:
+    depends_on:
+      elasticsearch-master:
+        condition: service_healthy
+    image: docker.elastic.co/kibana/kibana:7.16.2
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    volumes:
+      - ./es-certs:/usr/share/kibana/config/certs
+      - kibana-data:/usr/share/kibana/data
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - ELASTICSEARCH_HOSTS=https://elasticsearch-master:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD="123456"
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/kibana/config/certs/elastic-certificate.pem
+    logging:
+      options:
+        max-size: '64m'
+        max-file: '2'
+      driver: json-file
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.16.2
+    container_name: logstash-7.16.2
+    hostname: logstash
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD="123456"
+    volumes:
+      - "./es-certs/elastic-certificate.crt:/usr/share/logstash/config/certs/elastic-certificate.crt"
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml
+      - ./logstash/pipeline:/usr/share/logstash/config/pipeline
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.16.2
+    container_name: filebeat
+    hostname: filebeat
+    user: root # for adding docker metadata to processors
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    command: --strict.perms=false -e  # -e flag to log to stderr and disable syslog/file output
+    volumes:
+      - ./filebeat/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers
+      - /var/run/docker.sock:/var/run/docker.sock
+    logging:
+      options:
+        max-size: '256m'
+        max-file: '1'
+      driver: json-file
+    healthcheck:
+      test: filebeat test config
+      interval: 30s
+      timeout: 15s
+      retries: 5
+
+
+  # apm-server:
+  #   depends_on:
+  #     elasticsearch-master:
+  #       condition: service_healthy
+  #   image: docker.elastic.co/apm/apm-server:7.16.2
+  #   container_name: apm-server
+  #   ports:
+  #     - "8200:8200"
+  #   environment:
+  #     - TZ=Asia/Ho_Chi_Minh
+  #     - ELASTICSEARCH_USERNAME=elastic
+  #     - ELASTICSEARCH_PASSWORD="123456"
+  #   volumes:
+  #     - "./apm-server/apm-server.yml:/usr/share/apm-server/apm-server.yml"
+  #     - "./es-certs/elastic-certificate.pem:/usr/share/apm-server/config/certs/elastic-certificate.pem"
+
+  
+
+
+volumes:
+  es-data:
+    name: es-data
+  kibana-data:
+    name: kibana-data

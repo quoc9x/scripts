@@ -1,0 +1,47 @@
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      templates:
+        - config:
+            - type: container
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
+              fields:
+                project:
+                  name: example-project
+              fields_under_root: true
+          condition:
+            contains:
+              docker.container.name: java-devops
+
+output.logstash:
+  # initial brokers for reading cluster metadata
+  enabled: true
+  hosts: ["192.168.56.104:5044"]
+  loadbalance: true
+  worker: 4
+  compression_level: 3
+  slow_start: true
+
+# Internal queue configuration for buffering events to be published.
+queue:
+  # Queue type by name (default 'mem')
+  # The memory queue will present all available events (up to the outputs
+  # bulk_max_size) to the output, the moment the output is ready to server
+  # another batch of events.
+  mem:
+    # Max number of events the queue can buffer.
+    events: 4096
+
+    # Hints the minimum number of events stored in the queue,
+    # before providing a batch of events to the outputs.
+    # The default value is set to 2048.
+    # A value of 0 ensures events are immediately available
+    # to be sent to the outputs.
+    flush.min_events: 2048
+
+    # Maximum duration after which events are available to the outputs,
+    # if the number of events stored in the queue is < `flush.min_events`.
+    flush.timeout: 2s
+
+logging.metrics.enabled: false

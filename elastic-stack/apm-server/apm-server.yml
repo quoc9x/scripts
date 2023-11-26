@@ -1,0 +1,57 @@
+logging.level: info
+logging.metrics.enabled: false
+http.enabled: false
+http.port: 5067
+#monitoring.cluster_uuid: "Zib9N5G6S9OzmkYmqA_2Kw"
+monitoring:
+  enabled: true
+  elasticsearch:
+    hosts: ["https://elasticsearch-master:9200"]
+    username: '${ELASTICSEARCH_USERNAME}'
+    password: '${ELASTICSEARCH_PASSWORD}'
+    ssl.verification_mode: none
+    ssl.certificate_authorities:
+      - /usr/share/apm-server/config/certs/elastic-certificate.pem
+apm-server:
+  host: "0.0.0.0:8200"
+  ilm:
+    setup:
+      overwrite: true
+      require_policy: true
+      policies:
+        - name: "apm-rollover-30-days"
+          policy:
+            phases:
+              hot:
+                actions:
+                  rollover:
+                    max_size: "50gb"
+                    max_age: "30d"
+                  set_priority:
+                    priority: 100
+              warm:
+                actions:
+                  set_priority:
+                    priority: 50
+                  forcemerge:
+                    max_num_segments: 1
+                  readonly: {}
+              delete:
+                min_age: "30d"
+                actions:
+                  delete:
+                    delete_searchable_snapshot: true
+queue.mem.events: 102400
+setup.template.settings:
+  index.number_of_shards: 2
+  index.number_of_replicas: 1
+output.elasticsearch:
+  username: '${ELASTICSEARCH_USERNAME}'
+  password: '${ELASTICSEARCH_PASSWORD}'
+  protocol: https
+  hosts: ["elasticsearch-master:9200"]
+  ssl.verification_mode: none
+  ssl.certificate_authorities:
+    - /usr/share/apm-server/config/certs/elastic-certificate.pem
+  #worker: 5
+  #bulk_max_size: 10240
