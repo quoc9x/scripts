@@ -1,0 +1,16 @@
+1. Record
+Trên thanh công cụ chọn Templates => Chọn Recording => ...
+Để record được request thì cần phải đổi proxy sang proxy của jmeter
+Nếu là https thì cần phải add certificate của jmeter
+2. Find out all related requests
+Dùng Ctrl + F để search => Chọn Search all
+3. Isolate those requests
+Chọn request cần và đưa ra ngoài thread
+4. Correlation
+Phân tích request
+5. Testing and Optimize
+Sử dụng ENV để tối ưu request
+
+Refereces:
+https://www.youtube.com/watch?v=es02HBze7Lg&t=221s
+https://jmetervn.com/2016/11/05/recording-tests-with-jmeter/

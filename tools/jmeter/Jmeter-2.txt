@@ -1,0 +1,10 @@
+Vào Test Plan => Add => Thread (users) => Thread Group
+Thread Group => Add => HTTP Request
+Add Listener
+
+
+Tạo thread group
+
+Add => Sample => HTTP request
+
+Add thêm listener
